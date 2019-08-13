@@ -12,14 +12,11 @@ export class RedisQueue extends RedisQueues {
 
   public queueNames: string[];
 
-  public checkTime: number;
-
   constructor(config: Config, options: Options) {
     super(config);
     this.Priority = options.Priority || 1;
     this.queueNames = options.queueNames;
     this.pendingTime = options.pendingTime || 1000 * 60 * 5;
-    this.checkTime = options.checkTime || 1000 * 60 * 10;
     const pendingEvent = new EventEmitter();
     pendingEvent.on('pending', async () => {
       for (let level = this.Priority; level > 0; level--) {
@@ -106,5 +103,4 @@ interface Options {
   Priority: number /* 队列总体等级 */;
   queueNames: string[];
   pendingTime: number;
-  checkTime: number;
 }
