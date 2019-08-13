@@ -19,7 +19,6 @@ class RedisQueue extends ioredis_1.RedisQueues {
         this.Priority = options.Priority || 1;
         this.queueNames = options.queueNames;
         this.pendingTime = options.pendingTime || 1000 * 60 * 5;
-        this.checkTime = options.checkTime || 1000 * 60 * 10;
         const pendingEvent = new EventEmitter();
         pendingEvent.on('pending', () => __awaiter(this, void 0, void 0, function* () {
             for (let level = this.Priority; level > 0; level--) {
@@ -41,7 +40,7 @@ class RedisQueue extends ioredis_1.RedisQueues {
                     }
                 }
             }
-            yield sleep(50);
+            yield sleep(1);
             pendingEvent.emit('pending');
         }));
         pendingEvent.emit('pending');
