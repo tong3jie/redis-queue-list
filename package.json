@@ -1,0 +1,42 @@
+{
+  "name": "redis-queue-list",
+  "version": "0.1.0",
+  "description": "a message queue by redis list",
+  "main": "built/index.js",
+  "files": [
+    "built/"
+  ],
+  "scripts": {
+    "build": "rm -rf built && tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:tong3jie/redis-queue-list.git"
+  },
+  "keywords": [
+    "redis",
+    "queue",
+    "streams"
+  ],
+  "author": "juju",
+  "license": "MIT",
+  "dependencies": {
+    "ioredis": "^4.14.0",
+    "lodash.chunk": "^4.2.0",
+    "mz-modules": "^2.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^12.7.1",
+    "@types/mocha": "^5.2.7",
+    "@types/ioredis": "4.0.14",
+    "@typescript-eslint/eslint-plugin": "^1.13.0",
+    "@typescript-eslint/parser": "^1.13.0",
+    "eslint": "^6.1.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-plugin-import": "^2.18.2",
+    "typescript": "^3.5.3"
+  },
+  "engines": {
+    "node": ">=8"
+  }
+}
