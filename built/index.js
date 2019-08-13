@@ -8,8 +8,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+/* eslint-disable no-extra-label */
 const assert = require("assert");
 const events = require("events");
+const sleep = require("mz-modules/sleep");
 const ioredis_1 = require("./lib/ioredis");
 const util_1 = require("./lib/util");
 const { EventEmitter } = events;
@@ -20,13 +22,22 @@ class RedisQueue extends ioredis_1.RedisQueues {
         this.queueNames = options.queueNames;
         this.pendingTime = options.pendingTime || 1000 * 60 * 5;
         const pendingEvent = new EventEmitter();
-        this.level = new Set();
+        this.level = new Set(options.queueNames);
         pendingEvent.on('pending', () => __awaiter(this, void 0, void 0, function* () {
-            for (let level = this.Priority; level > 0; level--) {
-                for (const queueName of this.queueNames) {
+            // eslint-disable-next-line no-labels
+            top: for (let level = 1; level <= this.Priority; level++) {
+                // eslint-disable-next-line no-labels
+                if (!this.level.has(level))
+                    continue top;
+                // eslint-disable-next-line no-labels
+                down: for (const queueName of this.queueNames) {
+                    // eslint-disable-next-line no-labels
+                    if (!this.level.has(queueName))
+                        continue down;
                     const message = yield this.Client.rpoplpush(`{${queueName}:L${level}}:ING`, `{${queueName}:L${level}}:ING`);
+                    // eslint-disable-next-line no-labels
                     if (!message)
-                        continue;
+                        continue down;
                     const timeStamp = message.match(/[0-9]{13}$/g);
                     const messageInfo = message.replace(/:[0-9]{13}/g, '');
                     const isAck = yield this.Client.sismember(queueName, messageInfo);
@@ -38,6 +49,7 @@ class RedisQueue extends ioredis_1.RedisQueues {
                     }
                 }
             }
+            yield sleep(0);
             pendingEvent.emit('pending');
         }));
         pendingEvent.emit('pending');
@@ -51,7 +63,9 @@ class RedisQueue extends ioredis_1.RedisQueues {
     push(message, queueName, Priority = 1) {
         return __awaiter(this, void 0, void 0, function* () {
             assert(message.length !== 0, 'push message must be required!');
+            assert(this.queueNames.includes(queueName), `queueName must be defined at opttion,bust ${queueName}!`);
             this.level.add(Priority);
+            this.level.add(queueName);
             yield this.Client.lpush(`{${queueName}:L${Priority}}`, `${message}:${Date.now()}`);
         });
     }
@@ -61,16 +75,21 @@ class RedisQueue extends ioredis_1.RedisQueues {
      */
     pull(queueName) {
         return __awaiter(this, void 0, void 0, function* () {
-            assert(queueName.length !== 0, 'message must be required!');
+            assert(queueName.length !== 0, `queueName must be required,bust ${queueName}!`);
+            assert(this.queueNames.includes(queueName), `queueName must be defined at opttion,bust ${queueName}!`);
             let level = this.Priority;
             let message = '';
             do {
-                message = yield this.Client.rpoplpush(`{${queueName}:L${level}}`, `{${queueName}:L${level}}:ING`);
-                if (message) {
+                if (!this.level.has(level)) {
                     level--;
+                    continue;
+                }
+                message = yield this.Client.rpoplpush(`{${queueName}:L${level}}`, `{${queueName}:L${level}}:ING`);
+                level--;
+                if (message) {
                     break;
                 }
-            } while (level === 0);
+            } while (level !== 0);
             return message ? message.slice(0, -14) : null;
         });
     }
@@ -81,8 +100,10 @@ class RedisQueue extends ioredis_1.RedisQueues {
      */
     ack(message, queueName) {
         return __awaiter(this, void 0, void 0, function* () {
-            assert(message.length !== 0, 'ack message must be required!');
-            assert(this.queueNames.includes(queueName), 'ack queueName is not defined');
+            // assert(message && message.length !== 0, `ack message must be required. but ${message}!`);
+            // assert(this.queueNames.includes(queueName), 'ack queueName is not defined');
+            if (!message)
+                return;
             this.Client.sadd(queueName, message);
         });
     }

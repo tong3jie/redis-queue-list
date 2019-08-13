@@ -21,7 +21,8 @@
   "author": "juju",
   "license": "MIT",
   "dependencies": {
-    "ioredis": "^4.14.0"
+    "ioredis": "^4.14.0",
+    "mz-modules": "^2.1.0"
   },
   "devDependencies": {
     "@types/node": "^12.7.1",
