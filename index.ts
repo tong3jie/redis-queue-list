@@ -40,7 +40,7 @@ export class RedisQueue extends RedisQueues {
           }
         }
       }
-      await sleep(50);
+      await sleep(1);
       pendingEvent.emit('pending');
     });
     pendingEvent.emit('pending');
