@@ -18,7 +18,7 @@ RedisQ.push(JSON.stringify({ a: 1, b: i }), 'send', 5);
 //  enqueue
 const message = RedisQ.pull('send');
 //  dequeue
-RedisQ.ack('send');
+RedisQ.ack(message, 'send');
 //   confirm
 ```
 

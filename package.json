@@ -1,6 +1,6 @@
 {
   "name": "redis-queue-list",
-  "version": "0.5.0",
+  "version": "0.7.0",
   "description": "a message queue by redis list",
   "main": "built/index.js",
   "files": [
