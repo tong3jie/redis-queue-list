@@ -16,6 +16,9 @@
     "func-names": "off",
     "@typescript-eslint/no-var-requires": 0,
     "import/prefer-default-export": 0,
-    "no-continue": "off"
+    "no-continue": "off",
+    "prefer-rest-params": "off",
+    "array-callback-return": "off",
+    "consistent-return": "off"
   }
 }

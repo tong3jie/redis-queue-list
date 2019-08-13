@@ -3,6 +3,7 @@ import * as events from 'events';
 import * as sleep from 'mz-modules/sleep';
 import { RedisOptions } from 'ioredis';
 import { RedisQueues } from './lib/ioredis';
+import { redisRty } from './lib/util';
 
 const { EventEmitter } = events;
 export class RedisQueue extends RedisQueues {
@@ -19,6 +20,7 @@ export class RedisQueue extends RedisQueues {
     this.pendingTime = options.pendingTime || 1000 * 60 * 5;
     const pendingEvent = new EventEmitter();
     pendingEvent.on('pending', async () => {
+      console.time('pending');
       for (let level = this.Priority; level > 0; level--) {
         for (const queueName of this.queueNames) {
           const message: null | string = await this.Client.rpoplpush(`{${queueName}:L${level}}:ING`, `{${queueName}:L${level}}:ING`);
@@ -26,18 +28,17 @@ export class RedisQueue extends RedisQueues {
 
           const timeStamp: string[] = message.match(/[0-9]{13}$/g);
           const messageInfo = message.replace(/:[0-9]{13}/g, '');
+
           const isAck = await this.Client.sismember(queueName, messageInfo);
           if (isAck) {
-            this.Client.pipeline()
-              .lrem(`{${queueName}:L${level}}:ING`, 1, message)
-              .srem(queueName, messageInfo);
+            redisRty(this.Client.lrem(`{${queueName}:L${level}}:ING`, 1, message), this.Client.srem(queueName, messageInfo));
           } else if (Date.now() - new Date(parseInt(timeStamp[0], 10)).getTime() > this.pendingTime) {
-            this.Client.lrem(`{${queueName}:L${level}}:ING`, 1, message);
-            this.push(message.slice(0, -14), queueName, level);
+            redisRty(this.Client.lrem(`{${queueName}:L${level}}:ING`, 1, message), this.Client.lpush(`{${queueName}:L${level}}`, `${message.slice(0, -14)}:${Date.now()}`));
           }
         }
       }
-      await sleep(1);
+      console.timeEnd('pending');
+      await sleep(0);
       pendingEvent.emit('pending');
     });
     pendingEvent.emit('pending');
@@ -63,12 +64,6 @@ export class RedisQueue extends RedisQueues {
     let level = this.Priority;
     let message = '';
     do {
-      // message = await this.Client.rpop(`{${queueName}:L${level}}:ING`);
-
-      // if (message) {
-      //   level--;
-      //   break;
-      // }
       message = await this.Client.rpoplpush(`{${queueName}:L${level}}`, `{${queueName}:L${level}}:ING`);
       if (message) {
         level--;
@@ -86,7 +81,7 @@ export class RedisQueue extends RedisQueues {
   async ack(message: string, queueName: string): Promise<void> {
     assert(message.length !== 0, 'ack message must be required!');
     assert(this.queueNames.includes(queueName), 'ack queueName is not defined');
-    this.Client.sadd(queueName, Date.now(), message);
+    this.Client.sadd(queueName, message);
   }
 }
 

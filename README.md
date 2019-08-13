@@ -103,4 +103,4 @@ config = {
 
 ## Questions & Suggestions
 
-Please open an issue [here](https://github.com/tong3jie/redis-queue-stream/issues).
+Please open an issue [here](https://github.com/tong3jie/redis-queue-list/issues).
