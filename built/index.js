@@ -10,7 +10,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
 const events = require("events");
-const sleep = require("mz-modules/sleep");
 const ioredis_1 = require("./lib/ioredis");
 const util_1 = require("./lib/util");
 const { EventEmitter } = events;
@@ -40,7 +39,6 @@ class RedisQueue extends ioredis_1.RedisQueues {
                 }
             }
             console.timeEnd('pending');
-            yield sleep(0);
             pendingEvent.emit('pending');
         }));
         pendingEvent.emit('pending');

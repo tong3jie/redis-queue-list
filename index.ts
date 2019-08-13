@@ -1,6 +1,5 @@
 import * as assert from 'assert';
 import * as events from 'events';
-import * as sleep from 'mz-modules/sleep';
 import { RedisOptions } from 'ioredis';
 import { RedisQueues } from './lib/ioredis';
 import { redisRty } from './lib/util';
@@ -27,9 +26,10 @@ export class RedisQueue extends RedisQueues {
           if (!message) continue;
 
           const timeStamp: string[] = message.match(/[0-9]{13}$/g);
-          const messageInfo = message.replace(/:[0-9]{13}/g, '');
 
+          const messageInfo = message.replace(/:[0-9]{13}/g, '');
           const isAck = await this.Client.sismember(queueName, messageInfo);
+
           if (isAck) {
             redisRty(this.Client.lrem(`{${queueName}:L${level}}:ING`, 1, message), this.Client.srem(queueName, messageInfo));
           } else if (Date.now() - new Date(parseInt(timeStamp[0], 10)).getTime() > this.pendingTime) {
@@ -38,7 +38,7 @@ export class RedisQueue extends RedisQueues {
         }
       }
       console.timeEnd('pending');
-      await sleep(0);
+
       pendingEvent.emit('pending');
     });
     pendingEvent.emit('pending');
