@@ -20,8 +20,8 @@ class RedisQueue extends ioredis_1.RedisQueues {
         this.queueNames = options.queueNames;
         this.pendingTime = options.pendingTime || 1000 * 60 * 5;
         const pendingEvent = new EventEmitter();
+        this.level = new Set();
         pendingEvent.on('pending', () => __awaiter(this, void 0, void 0, function* () {
-            console.time('pending');
             for (let level = this.Priority; level > 0; level--) {
                 for (const queueName of this.queueNames) {
                     const message = yield this.Client.rpoplpush(`{${queueName}:L${level}}:ING`, `{${queueName}:L${level}}:ING`);
@@ -38,7 +38,6 @@ class RedisQueue extends ioredis_1.RedisQueues {
                     }
                 }
             }
-            console.timeEnd('pending');
             pendingEvent.emit('pending');
         }));
         pendingEvent.emit('pending');
@@ -49,9 +48,10 @@ class RedisQueue extends ioredis_1.RedisQueues {
      * @param queueName   队列名称
      * @param Priority    优先级
      */
-    push(message, queueName, Priority = this.Priority) {
+    push(message, queueName, Priority = 1) {
         return __awaiter(this, void 0, void 0, function* () {
             assert(message.length !== 0, 'push message must be required!');
+            this.level.add(Priority);
             yield this.Client.lpush(`{${queueName}:L${Priority}}`, `${message}:${Date.now()}`);
         });
     }
