@@ -36,10 +36,8 @@ exports.redisRty = function (...callback) {
 };
 exports.Arrayzip = (array1, array2, value) => {
     assert(array1.length === array2.length, "array1's length and array2's length must be  equal");
-    console.log('array2', array2);
     return array1
         .map((item, index) => {
-        console.log(item, index, value);
         if (item === value)
             return array2[index];
     })
