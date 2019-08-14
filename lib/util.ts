@@ -19,16 +19,20 @@ export const convertObjectToArray = (obj): [] => {
   }
   return result;
 };
-export const redisRty = async function (...callback): Promise<void> {
+export const redisRty = async function (...callback: any): Promise<void> {
   const result = await Promise.all([...callback]);
   if (result.includes(0)) {
-    this.redisRty(this.Arrayzip(result, [...callback]));
+    this.redisRty(this.Arrayzip(result, [...callback], 0));
   }
 };
 
-export const Arrayzip = (array1: any[], array2: any[], value): any[] => {
+export const Arrayzip = (array1: any[], array2: any[], value: any): any[] => {
   assert(array1.length === array2.length, "array1's length and array2's length must be  equal");
-  return array1.filter((item, index) => {
-    if (item === value) return array2[index];
-  });
+  console.log('array2', array2);
+  return array1
+    .map((item, index) => {
+      console.log(item, index, value);
+      if (item === value) return array2[index];
+    })
+    .filter(Boolean);
 };
