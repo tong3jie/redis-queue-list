@@ -8,7 +8,7 @@ import { redisRty } from './lib/util';
 
 const { EventEmitter } = events;
 export class RedisQueue extends RedisQueues {
-  public pendingTime: number;
+  public pendingTime: number; // 超时时间
 
   public Priority: number;
 
@@ -22,8 +22,7 @@ export class RedisQueue extends RedisQueues {
     this.queueNames = options.queueNames;
     this.pendingTime = options.pendingTime || 1000 * 60 * 5;
     const pendingEvent = new EventEmitter();
-    this.level = new Set(options.queueNames);
-
+    this.level = new Set();
     pendingEvent.on('pending', async () => {
       // eslint-disable-next-line no-labels
       top: for (let level = 1; level <= this.Priority; level++) {
@@ -34,7 +33,6 @@ export class RedisQueue extends RedisQueues {
         down: for (const queueName of this.queueNames) {
           // eslint-disable-next-line no-labels
           if (!this.level.has(queueName)) continue down;
-
           const message: null | string = await this.Client.rpoplpush(`{${queueName}:L${level}}:ING`, `{${queueName}:L${level}}:ING`);
 
           // eslint-disable-next-line no-labels
@@ -45,8 +43,10 @@ export class RedisQueue extends RedisQueues {
           const messageInfo = message.replace(/:[0-9]{13}/g, '');
           const isAck = await this.Client.sismember(queueName, messageInfo);
           if (isAck) {
+            // confirm message was Acked
             redisRty(this.Client.lrem(`{${queueName}:L${level}}:ING`, 1, message), this.Client.srem(queueName, messageInfo));
           } else if (Date.now() - new Date(parseInt(timeStamp[0], 10)).getTime() > this.pendingTime) {
+            // confirm pendingTime
             redisRty(this.Client.lrem(`{${queueName}:L${level}}:ING`, 1, message), this.Client.lpush(`{${queueName}:L${level}}`, `${message.slice(0, -14)}:${Date.now()}`));
           }
         }
@@ -55,26 +55,51 @@ export class RedisQueue extends RedisQueues {
       await sleep(0);
       pendingEvent.emit('pending');
     });
+    pendingEvent.on('checkName', async () => {
+      if (config.cluster) {
+        const clusterNodes = this.Client.nodes('master');
+        for (const node of clusterNodes) {
+          for (const queueName of this.queueNames) {
+            const result = await node.scan(0, 'match', `*${queueName}*`);
+
+            if (result[1].length === 0) {
+              this.level.delete(queueName);
+              continue;
+            }
+          }
+        }
+      } else {
+        for (const queueName of this.queueNames) {
+          const result = await this.Client.scan(0, 'match', `*${queueName}*`);
+          if (result[1].length === 0) {
+            this.level.delete(queueName);
+            continue;
+          }
+        }
+      }
+      await sleep(1000 * 60);
+      pendingEvent.emit('checkName');
+    });
     pendingEvent.emit('pending');
+    pendingEvent.emit('checkName');
   }
 
   /**
    * 入队
-   * @param message 消息内容
-   * @param queueName   队列名称
-   * @param Priority    优先级
+   * @param message {string} 消息内容
+   * @param queueName {string}  队列名称
+   * @param Priority  {number}  优先级,默认为1
    */
   async push(message: string, queueName: string, Priority = 1): Promise<void> {
     assert(message.length !== 0, 'push message must be required!');
     assert(this.queueNames.includes(queueName), `queueName must be defined at opttion,bust ${queueName}!`);
-    this.level.add(Priority);
-    this.level.add(queueName);
-    await this.Client.lpush(`{${queueName}:L${Priority}}`, `${message}:${Date.now()}`);
+    this.level.add(Priority).add(queueName);
+    redisRty(this.Client.lpush(`{${queueName}:L${Priority}}`, `${message}:${Date.now()}`));
   }
 
   /**
    * 出队
-   * @param queueName 队列名称
+   * @param queueName {string} 队列名称
    */
   async pull(queueName: string): Promise<string> {
     assert(queueName.length !== 0, `queueName must be required,bust ${queueName}!`);
@@ -98,14 +123,14 @@ export class RedisQueue extends RedisQueues {
 
   /**
    * 消息确认
-   * @param message 消息内容
-   * @param queueName 队列名称
+   * @param message {string} 消息内容
+   * @param queueName {string} 队列名称
    */
   async ack(message: string, queueName: string): Promise<void> {
     // assert(message && message.length !== 0, `ack message must be required. but ${message}!`);
     // assert(this.queueNames.includes(queueName), 'ack queueName is not defined');
     if (!message) return;
-    this.Client.sadd(queueName, message);
+    redisRty(this.Client.sadd(queueName, message));
   }
 }
 
@@ -121,5 +146,5 @@ export interface Config {
 interface Options {
   Priority: number /* 队列总体等级 */;
   queueNames: string[];
-  pendingTime: number;
+  pendingTime: number; // 超时时间
 }
