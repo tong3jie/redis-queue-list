@@ -35,6 +35,28 @@ RedisQ.Redis.get('foo').ack(message, 'send');
 //   confirm
 ```
 
+## Andvance
+
+```javascript
+const EventEmitter = require('event').EventEmitter;
+const redisEvent = new EventEmitter();
+const redisQueue = require('redis-queue-list').RedisQueue;
+const RedisQ = new redisQueue(config, option);
+RedisQ.push(JSON.stringify({ a: 1, b: i }), 'send', 5);
+//  enqueue
+
+redisEvent.on('pull', async () => {
+  const message = RedisQ.Redis.get('foo').pull('send');
+  //  dequeue
+  RedisQ.Redis.get('foo').ack(message, 'send');
+  //   confirm
+  await sleep(5);
+  redisEvent.emit('pull');
+});
+
+redisEvent.emit('pull');
+```
+
 ## option
 
 ```javascript
