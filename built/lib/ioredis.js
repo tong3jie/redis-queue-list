@@ -5,6 +5,7 @@ const assert = require("assert");
 const util_1 = require("./util");
 class RedisQueues {
     constructor(config) {
+        this.Config = config || {};
         if (config.cluster === true) {
             assert(config.nodes && config.nodes.length !== 0, 'redis cluster config error');
             config.nodes.forEach((node) => {
@@ -12,13 +13,22 @@ class RedisQueues {
             });
             this.Client = new Ioredis.Cluster(config.nodes, config);
         }
-        else if (config.sentinels) {
+        else if (config.sentinel) {
             assert(config.sentinels && config.sentinels.length !== 0, 'redis sentinels configuration is required when use redis sentinel');
             config.sentinels.forEach((sentinel) => {
                 assert(sentinel.host && sentinel.port, `redis 'host: ${sentinel.host}', 'port: ${sentinel.port}' are required on config`);
             });
             assert(config.name && config.password !== undefined && config.db !== undefined, `redis 'name of master: ${config.name}', 'password: ${config.password}', 'db: ${config.db}' are required on config`);
             this.Client = new Ioredis(config);
+        }
+        else if (config.clients) {
+            const redisMap = new Map();
+            if (this.Config.clients) {
+                for (const [key, node] of Object.entries(this.Config.clients)) {
+                    redisMap.set(key, new Ioredis(node));
+                }
+            }
+            this.Redis = redisMap;
         }
         else {
             assert(config.host && config.port && config.password !== undefined && config.db !== undefined, `redis 'host: ${config.host}', 'port: ${config.port}', 'password: ${config.password}', 'db: ${config.db}' are required on config`);
@@ -41,15 +51,17 @@ class RedisQueues {
             }
             return args;
         });
-        this.Client.on('connect', () => {
-            console.log('redis was connected!');
-        });
-        this.Client.on('disconnect', () => {
-            console.log('redis was disconnected!');
-        });
-        this.Client.on('error', (err) => {
-            console.log(err);
-        });
+        if (this.Client) {
+            this.Client.on('connect', () => {
+                console.log('redis was connected!');
+            });
+            this.Client.on('disconnect', () => {
+                console.log('redis was disconnected!');
+            });
+            this.Client.on('error', (err) => {
+                console.log(err);
+            });
+        }
     }
 }
 exports.RedisQueues = RedisQueues;

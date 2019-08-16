@@ -5,7 +5,13 @@ import { convertObjectToArray } from './util';
 export class RedisQueues {
   public Client: any;
 
+  public Config: any;
+
+  public Redis: any;
+
   constructor(config) {
+    this.Config = config || {};
+
     if (config.cluster === true) {
       assert(config.nodes && config.nodes.length !== 0, 'redis cluster config error');
       config.nodes.forEach(
@@ -18,7 +24,7 @@ export class RedisQueues {
       );
 
       this.Client = new Ioredis.Cluster(config.nodes, config);
-    } else if (config.sentinels) {
+    } else if (config.sentinel) {
       assert(config.sentinels && config.sentinels.length !== 0, 'redis sentinels configuration is required when use redis sentinel');
       config.sentinels.forEach(
         (sentinel: any): void => {
@@ -32,6 +38,14 @@ export class RedisQueues {
       );
 
       this.Client = new Ioredis(config);
+    } else if (config.clients) {
+      const redisMap = new Map();
+      if (this.Config.clients) {
+        for (const [key, node] of Object.entries(this.Config.clients)) {
+          redisMap.set(key, new Ioredis(node));
+        }
+      }
+      this.Redis = redisMap;
     } else {
       assert(
         config.host && config.port && config.password !== undefined && config.db !== undefined,
@@ -62,14 +76,16 @@ export class RedisQueues {
       },
     );
 
-    this.Client.on('connect', () => {
-      console.log('redis was connected!');
-    });
-    this.Client.on('disconnect', () => {
-      console.log('redis was disconnected!');
-    });
-    this.Client.on('error', (err) => {
-      console.log(err);
-    });
+    if (this.Client) {
+      this.Client.on('connect', () => {
+        console.log('redis was connected!');
+      });
+      this.Client.on('disconnect', () => {
+        console.log('redis was disconnected!');
+      });
+      this.Client.on('error', (err) => {
+        console.log(err);
+      });
+    }
   }
 }

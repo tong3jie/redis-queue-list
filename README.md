@@ -12,13 +12,26 @@ $ npm install redis-queue-liist
 ## Basic Usage
 
 ```javascript
-const redisQueue = require('redis-queue-list');
+const redisQueue = require('redis-queue-list').RedisQueue;
 const RedisQ = new redisQueue(config, option);
 RedisQ.push(JSON.stringify({ a: 1, b: i }), 'send', 5);
 //  enqueue
 const message = RedisQ.pull('send');
 //  dequeue
 RedisQ.ack(message, 'send');
+//   confirm
+```
+
+## Mulit Clients
+
+```javascript
+const redisQueue = require('redis-queue-list').MulitRedis;
+const RedisQ = new redisQueue(config, option);
+RedisQ.Redis.get('foo').push(JSON.stringify({ a: 1, b: i }), 'send', 5);
+//  enqueue
+const message = RedisQ.Redis.get('foo').pull('send');
+//  dequeue
+RedisQ.Redis.get('foo').ack(message, 'send');
 //   confirm
 ```
 
@@ -36,22 +49,23 @@ RedisQ.ack(message, 'send');
 
 **Single Client**
 
-```
+```javascript
 config = {
-    port: 6379,          //  port
-    host: '127.0.0.1',   //  host
-    password: 'auth',
-    db: 0,
-}
+  port: 6379, //  port
+  host: '127.0.0.1', //  host
+  password: 'auth',
+  db: 0,
+};
 ```
 
 **Multi Clients**
 
-```
+```javascript
 config = {
-    foo: {                 // instanceName. See below
-      port: 6379,          // Redis port
-      host: '127.0.0.1',   // Redis host
+  clients: {
+    foo: {
+      port: 6379, // Redis port
+      host: '127.0.0.1', // Redis host
       password: 'auth',
       db: 0,
     },
@@ -61,41 +75,47 @@ config = {
       password: 'auth',
       db: 1,
     },
-}
+  },
+};
 ```
 
 **Sentinel**
 
-```
+```javascript
 config = {
-    sentinels: [{          // Sentinel instances
-      port: 26379,         // Sentinel port
-      host: '127.0.0.1',   // Sentinel host
-    }],
-    name: 'mymaster',      // Master name
-    password: 'auth',
-    db: 0
-}
+  sentinels: [
+    {
+      port: 26379, // Sentinel port
+      host: '127.0.0.1', // Sentinel host
+    },
+  ],
+  name: 'mymaster', // Master name
+  password: 'auth',
+  db: 0,
+};
 ```
 
 **Cluster**
 
-```
+```javascript
 config = {
-     cluster: true,
-     nodes: [{
-       host: '127.0.0.1',
-       port: '6379',
-       family: 'user',
-       password: 'password',
-       db: 'db',
-     }, {
-       host: '127.0.0.1',
-       port: '6380',
-       family: 'user',
-       password: 'password',
-       db: 'db',
-     }]
+  cluster: true,
+  nodes: [
+    {
+      host: '127.0.0.1',
+      port: '6379',
+      family: 'user',
+      password: 'password',
+      db: 'db',
+    },
+    {
+      host: '127.0.0.1',
+      port: '6380',
+      family: 'user',
+      password: 'password',
+      db: 'db',
+    },
+  ],
 };
 ```
 
