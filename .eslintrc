@@ -19,6 +19,7 @@
     "no-continue": "off",
     "prefer-rest-params": "off",
     "array-callback-return": "off",
-    "consistent-return": "off"
+    "consistent-return": "off",
+    "no-extra-label": "off"
   }
 }

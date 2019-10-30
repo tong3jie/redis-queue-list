@@ -24,18 +24,18 @@ export class RedisQueue extends RedisQueues {
     this.level = new Set();
     pendingEvent.on('pending', async () => {
       // eslint-disable-next-line no-labels
-      for (let level = 1; level <= this.Priority; level++) {
+      level: for (let level = 1; level <= this.Priority; level++) {
         // eslint-disable-next-line no-labels
-        if (!this.level.has(level)) continue;
+        if (!this.level.has(level)) continue level;
 
         // eslint-disable-next-line no-labels
-        for (const queueName of this.queueNames) {
+        queuee: for (const queueName of this.queueNames) {
           // eslint-disable-next-line no-labels
-          if (!this.level.has(queueName)) continue;
+          if (!this.level.has(queueName)) continue queuee;
           const message: null | string = await this.Client.rpoplpush(`{${queueName}:L${level}}:ING`, `{${queueName}:L${level}}:ING`);
 
           // eslint-disable-next-line no-labels
-          if (!message) continue;
+          if (!message) continue queuee;
 
           const timeStamp: string[] = message.match(/[0-9]{13}$/g);
 
@@ -64,6 +64,12 @@ export class RedisQueue extends RedisQueues {
             if (result[1].length === 0) {
               this.level.delete(queueName);
               continue;
+            } else {
+              result[1].forEach((item) => {
+                const lev = item.substr(item.match(':').index + 2, 1);
+                const name = item.substring(1, item.match(':').index);
+                this.level.add(parseInt(lev, 10)).add(name);
+              });
             }
           }
         }
@@ -73,6 +79,12 @@ export class RedisQueue extends RedisQueues {
           if (result[1].length === 0) {
             this.level.delete(queueName);
             continue;
+          } else {
+            result[1].forEach((item) => {
+              const lev = item.substr(item.match(':').index + 2, 1);
+              const name = item.substring(1, item.match(':').index);
+              this.level.add(parseInt(lev, 10)).add(name);
+            });
           }
         }
       }

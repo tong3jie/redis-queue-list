@@ -6,7 +6,7 @@ Supports Redis >= 3.0.0 and (Node.js >= 8).
 ## Install
 
 ```shell
-$ npm install redis-queue-liist
+$ npm install redis-queue-list
 ```
 
 ## Basic Usage
